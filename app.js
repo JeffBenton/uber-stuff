@@ -29,8 +29,7 @@ var uber = new Uber({
   client_id: clientID,
   client_secret: clientSecret,
   server_token: ServerID,
-  redirect_uri: "http://52.24.187.166//auth/uber/callback",
-  // redirect_uri: "https://uberforall.herokuapp.com/auth/uber/callback",
+  redirect_uri: "https://52.24.187.166/auth/uber/callback",
   name: 'Textber'
 });
 app.use(session({
@@ -136,8 +135,7 @@ passport.deserializeUser(function (user, done){
 passport.use(new uberStrategy({
         clientID: clientID,
         clientSecret: clientSecret,
-        // callbackURL: "https://uberforall.herokuapp.com/auth/uber/callback"
-        callbackURL: "http://52.24.187.166/auth/uber/callback"
+        callbackURL: "https://52.24.187.166/auth/uber/callback"
     },
     function (accessToken, refreshToken, user, done) {
         user.accessToken = accessToken;
@@ -166,13 +164,9 @@ app.get('/auth/uber/callback',
     res.redirect('/');
   });
 app.post("/addUser", function(request, response){
-    console.log(request.body);
-    confirmPhone = "+1" + request.body.phoneNumber;
-    users.push({phone: confirmPhone});
-
     client.messages.create({
         body: "Thank you for signing up for TEXTBER",
-        to: confirmPhone,
+        to: "+9142635538",
         from: "+16505420611"
     }, function(err, message) {
         process.stdout.write(message.sid);
