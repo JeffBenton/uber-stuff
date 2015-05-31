@@ -7,14 +7,15 @@
 </head>
 <body>
 	<h2>Welcome to the trip tracker</h2>
+	<button id="arriving">arriving</button>
 	<script type="text/javascript">
-
+		$("#arriving").click()
 		$.get('/currentRide', function(response) {
 			console.log(response);
 		});
 
 
-		$.post('/changeStatus', {status: 'accepted'},function(response){
+		$.post('/changeStatus', {status: 'accepted'}, function(req, res){
 			$.get('/currentRide', function(response) {
 				console.log(response);
 			});

@@ -11,6 +11,10 @@ var Uber = require('node-uber');
 var twilio = require('twilio');
 var qs = require('querystring');
 var ejs = require('ejs');
+var request = require('request');
+var cheerio = require('cheerio');
+var fs = require('fs');
+var socket = require
 //Geocoder stuff
 var geocodeProvider = 'google';
 var httpAdapter = 'https';
@@ -25,11 +29,12 @@ var clientID = config.ClientID;
 var clientSecret = config.ClientSecret;
 var ServerID = config.ServerID;
 var sessionSecret = "UBERAPIROCKS";
+var globalAccessToken;
 var uber = new Uber({
   client_id: clientID,
   client_secret: clientSecret,
   server_token: ServerID,
-  redirect_uri: "https://52.24.187.166/auth/uber/callback",
+  redirect_uri: "http://localhost:8000/auth/uber/callback",
   name: 'Textber'
 });
 app.use(session({
@@ -44,7 +49,51 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "./client")));
 app.set('view engine', 'ejs');
 
-app.listen(8000);
+var server = app.listen(8000);
+var io = require("socket.io").listen(server);
+
+
+
+var url = 'https://uberforall.herokuapp.com/results';
+var address_data;
+var from_data;
+var count_req = 0;
+var old_count_req = 0;
+
+var hasData = false;
+function scrape(){
+    if(!hasData){
+        request(url, function(error, response, html){
+
+            if(!error){
+                var $ = cheerio.load(html);
+
+                $('.address').filter(function(){
+                    var data1 = $(this);
+                    address_data = data1.text();
+                });
+
+                $('.from_data').filter(function(){
+                    var data2 = $(this);
+                    from_data = data2.text();
+                });
+
+                $('.number_request').filter(function(){
+                    var data3 = $(this);
+                    count_req = data3.text();
+
+                    if (count_req != old_count_req) {
+
+                        old_count_req = count_req;
+                        console.log(count_req);
+                        io.emit("has_changed",count_req);
+                    }
+
+                });
+            }
+        });
+    }
+}
 
 var accountSid = 'AC23d38d64f113cbd57fe69b744ae37c46';
 var authToken = '4767a1a13814d3e80b13773824e79f44';
@@ -58,29 +107,68 @@ client.messages.create({
     process.stdout.write(message.sid);
 });
 
+// function getCar(){
+//     if(hasData){
+//         hasData = false;
+//         console.log(address_data);
+//         var splitText = address_data.split(":");
+//         var trip = [];
+//         var tripInfo = {};
+//         geocoder.geocode(splitText[0], function(err, res){
+//             trip.push({ lat: res[0].latitude, long: res[0].longitude });
+//             geocoder.geocode(splitText[1], function(err, res){
+//                 trip.push({ lat: res[0].latitude, long: res[0].longitude });
+//                 console.log(trip);
+//                 var params = {
+//                     start_latitude : trip[0].lat,
+//                     start_longitude: trip[0].long,
+//                     end_latitude: trip[1].lat,
+//                     end_longitude: trip[1].long
+//                 };
+//                 uber.estimates.price(params, function(err, res){
+//                     console.log(res.prices[0]);
+//                     tripInfo.priceEstimate = res.prices[0].estimate;
+
+//                     uber.estimates.time(params, function(err, res){
+//                         console.log(res.times[0]);
+//                         tripInfo.timeEstimate = Math.ceil(res.times[0].estimate/60)
+//                         params.product_id = "a1111c8c-c720-46c3-8534-2fcdd730040d"
+
+//                         postAuthorizedRequest('/v1/requests', globalAccessToken, params, function (error, res) {
+//                             if (error) { console.log(error); }
+//                             console.log(tripInfo); 
+//                             // response.redirect('triptracker');
+//                             client.messages.create({
+//                                 body: "Your car has been dispatched!  Your price estimate is: " + tripInfo.priceEstimate + " and your car will arrive in " + tripInfo.timeEstimate + " minutes. Thank you for choosing Uber.",
+//                                 to: "+19142635538",
+//                                 from: "+16505420611"
+//                             }, function(err, message) {
+//                                     process.stdout.write(message.sid);
+//                                     response.redirect('/triptracker');
+//                                 });
+//                          },  request);
+//                     });
+//                 });
+//             });
+//         })
+//     // }
+// }
+setInterval(function() {scrape()}, 1000);
+
+// io.sockets.on('connection',function(socket){
+//     console.log("connected");
+    // socket.on("count_change", function(count_req){
+    //     io.emit("has_changed",count_req);
+    //     console.log("Has changed");
+    //     console.log(count_req);
+    // });
+// });
+
+
+// setInterval(function(){ getCar() }, 1000);
+
 app.post('/processtext', ensureAuthenticated, function(request,response) {
-    if (req.method == 'POST') {
-        var body = '';
-
-        req.on('data', function (data) {
-            body += data;
-        });
-
-    req.on('end', function () {
-        var POST = qs.parse(body);
-        console.log(POST);
-
-        if (POST.From == "+19142635538") {
-            client.messages.create({
-            body: "Hey, " + POST.From + ". So you want to go to " + POST.Body,
-            to: "+19142635538",
-            from: "+16505420611"
-        }, function(err, message) {
-                process.stdout.write(message.sid);
-            });
-        }
-
-        var inputText = POST.Body;
+        var inputText = address_data;
         var splitText = inputText.split(":");
         var trip = [];
         var tripInfo = {};
@@ -114,15 +202,13 @@ app.post('/processtext', ensureAuthenticated, function(request,response) {
                                 from: "+16505420611"
                             }, function(err, message) {
                                     process.stdout.write(message.sid);
-                                    response.redirect('/');
+                                    response.redirect('/triptracker');
                                 });
                          },  request);
                         });
                     });
                 });
             });
-        });
-    };
 });
 
 
@@ -135,7 +221,7 @@ passport.deserializeUser(function (user, done){
 passport.use(new uberStrategy({
         clientID: clientID,
         clientSecret: clientSecret,
-        callbackURL: "https://52.24.187.166/auth/uber/callback"
+        callbackURL: "http://localhost:8000/auth/uber/callback"
     },
     function (accessToken, refreshToken, user, done) {
         user.accessToken = accessToken;
@@ -161,19 +247,20 @@ app.get('/auth/uber/callback',
     passport.authenticate('uber', {
         failureRedirect: '/login'
     }), function(req, res) {
+        // globalAccessToken = req.user.accessToken;
     res.redirect('/');
   });
+
 app.post("/addUser", function(request, response){
+    console.log("here");
     client.messages.create({
-        body: "Thank you for signing up for TEXTBER",
-        to: "+9142635538",
+        body: "Thank you for registering!",
+        to: "+19142635538",
         from: "+16505420611"
     }, function(err, message) {
         process.stdout.write(message.sid);
     });
-
     response.redirect("/");
-
 });
 
 app.get('/', ensureAuthenticated, function (request, response) {
@@ -204,7 +291,9 @@ app.get('/currentRide', function(request, response) {
           response.send(res);
     });
 });
-
+app.get('/login', function (request, response) {
+    response.render('login');
+});
 app.post('/changeStatus', function(request, response) {
     var parameters = {
         status : request.body.status,
