@@ -62,89 +62,72 @@ client.messages.create({
 });
 
 app.post('/processtext', ensureAuthenticated, function(request,response) {
-if (req.method == 'POST') {
+    if (req.method == 'POST') {
         var body = '';
 
         req.on('data', function (data) {
             body += data;
         });
 
-        req.on('end', function () {
-            var POST = qs.parse(body);
-            console.log(POST);
+    req.on('end', function () {
+        var POST = qs.parse(body);
+        console.log(POST);
 
-            if (POST.From == "+19142635538") {
-                client.messages.create({
-                    body: "Hey, " + POST.From + ". So you want to go to " + POST.Body,
-                    to: "+19142635538",
-                    from: "+16505420611"
-                }, function(err, message) {
-                    process.stdout.write(message.sid);
-                });
-            }
-            var token = '4767a1a13814d3e80b13773824e79f44',
-                header = req.headers['x-twilio-signature'];
+        if (POST.From == "+19142635538") {
+            client.messages.create({
+            body: "Hey, " + POST.From + ". So you want to go to " + POST.Body,
+            to: "+19142635538",
+            from: "+16505420611"
+        }, function(err, message) {
+                process.stdout.write(message.sid);
+            });
+        }
 
-            //validateRequest returns true if the request originated from Twilio
-            if (twilio.validateRequest(token, header, 'https://uberforall.herokuapp.com/', POST)) {
-                //generate a TwiML response
-                var resp = new twilio.TwimlResponse();
-                resp.say('hello, twilio!');
+        var inputText = POST.Body;
+        var splitText = inputText.split(":");
+        var trip = [];
+        var tripInfo = {};
+        geocoder.geocode(splitText[0], function(err, res){
+            trip.push({ lat: res[0].latitude, long: res[0].longitude });
+            geocoder.geocode(splitText[1], function(err, res){
+                trip.push({ lat: res[0].latitude, long: res[0].longitude });
+                console.log(trip);
+                var params = {
+                    start_latitude : trip[0].lat,
+                    start_longitude: trip[0].long,
+                    end_latitude: trip[1].lat,
+                    end_longitude: trip[1].long
+                };
+                uber.estimates.price(params, function(err, res){
+                    console.log(res.prices[0]);
+                    tripInfo.priceEstimate = res.prices[0].estimate;
 
-                res.writeHead(200, { 'Content-Type':'text/xml' });
-                res.end(resp.toString());
+                    uber.estimates.time(params, function(err, res){
+                        console.log(res.times[0]);
+                        tripInfo.timeEstimate = Math.ceil(res.times[0].estimate/60)
+                        params.product_id = "a1111c8c-c720-46c3-8534-2fcdd730040d"
 
-                var inputText = POST.Body;
-                var splitText = inputText.split(":");
-                var trip = [];
-                var tripInfo = {};
-                geocoder.geocode(splitText[0], function(err, res){
-                    trip.push({ lat: res[0].latitude, long: res[0].longitude });
-                    geocoder.geocode(splitText[1], function(err, res){
-                        trip.push({ lat: res[0].latitude, long: res[0].longitude });
-                        console.log(trip);
-                        var params = {
-                            start_latitude : trip[0].lat,
-                            start_longitude: trip[0].long,
-                            end_latitude: trip[1].lat,
-                            end_longitude: trip[1].long
-                        };
-                        uber.estimates.price(params, function(err, res){
-                            console.log(res.prices[0]);
-                            tripInfo.priceEstimate = res.prices[0].estimate;
-                            uber.estimates.time(params, function(err, res){
-                                console.log(res.times[0]);
-                                tripInfo.timeEstimate = Math.ceil(res.times[0].estimate/60)
-                                params.product_id = "a1111c8c-c720-46c3-8534-2fcdd730040d"
-                                postAuthorizedRequest('/v1/requests', request.user.accessToken, params, function (error, res) {
-                                    if (error) { console.log(error); }
-                                      console.log(tripInfo); 
-                                      // response.redirect('triptracker');
-                                      client.messages.create({
-                                        body: "Your car has been dispatched!  Your price estimate is: " + tripInfo.priceEstimate + " and your car will arrive in " + tripInfo.timeEstimate + " minutes. Thank you for choosing Uber.",
-                                        to: "+19142635538",
-                                        from: "+16505420611"
-                                    }, function(err, message) {
-                                        process.stdout.write(message.sid);
-                                        response.redirect('/');
-                                    });
-                                },  request);
-                            });
+                        postAuthorizedRequest('/v1/requests', request.user.accessToken, params, function (error, res) {
+                            if (error) { console.log(error); }
+                            console.log(tripInfo); 
+                            // response.redirect('triptracker');
+                            client.messages.create({
+                                body: "Your car has been dispatched!  Your price estimate is: " + tripInfo.priceEstimate + " and your car will arrive in " + tripInfo.timeEstimate + " minutes. Thank you for choosing Uber.",
+                                to: "+19142635538",
+                                from: "+16505420611"
+                            }, function(err, message) {
+                                    process.stdout.write(message.sid);
+                                    response.redirect('/');
+                                });
+                         },  request);
                         });
                     });
                 });
-            }
-            else {
-                res.writeHead(403, { 'Content-Type':'text/plain' });
-                res.end('you are not twilio - take a hike.');
-            }
+            });
         });
-    }
-    else {
-        res.writeHead(404, { 'Content-Type':'text/plain' });
-        res.end('send a POST');
-    }
+    };
 });
+
 
 passport.serializeUser(function (user, done){
     done(null, user);
