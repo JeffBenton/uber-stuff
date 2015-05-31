@@ -29,7 +29,7 @@ var uber = new Uber({
   client_id: clientID,
   client_secret: clientSecret,
   server_token: ServerID,
-  redirect_uri: "http://localhost:3000/auth/uber/callback",
+  redirect_uri: "http://52.24.187.166//auth/uber/callback",
   // redirect_uri: "https://uberforall.herokuapp.com/auth/uber/callback",
   name: 'Textber'
 });
@@ -45,9 +45,7 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "./client")));
 app.set('view engine', 'ejs');
 
-var server = app.listen(process.env.PORT || 3000, function(){
-  console.log("Express server listening on port %d in %s mode", this.address().port, app.settings.env);
-});
+app.listen(8000);
 
 var accountSid = 'AC23d38d64f113cbd57fe69b744ae37c46';
 var authToken = '4767a1a13814d3e80b13773824e79f44';
@@ -139,7 +137,7 @@ passport.use(new uberStrategy({
         clientID: clientID,
         clientSecret: clientSecret,
         // callbackURL: "https://uberforall.herokuapp.com/auth/uber/callback"
-        callbackURL: "http://localhost:3000/auth/uber/callback"
+        callbackURL: "http://52.24.187.166/auth/uber/callback"
     },
     function (accessToken, refreshToken, user, done) {
         user.accessToken = accessToken;
