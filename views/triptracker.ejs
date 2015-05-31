@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+	<title>Uber App</title>
+</head>
+<body>
+	<h2>Welcome to the trip tracker</h2>
+	<script type="text/javascript">
+
+		$.get('/currentRide', function(response) {
+			console.log(response);
+		});
+
+
+		$.post('/changeStatus', {status: 'accepted'},function(response){
+			$.get('/currentRide', function(response) {
+				console.log(response);
+			});
+		});
+	
+	</script>
+</body>
+</html>
