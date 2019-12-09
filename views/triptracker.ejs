@@ -6,7 +6,6 @@
 	<title>Uber App</title>
 	<script type="text/javascript">
 		$(document).ready(function(){
-			// function repeat(){
 			$("#asdf").submit(function(response){
 				console.log("here");
 				$("#getdata").html("<p>Ride Status: " + response.status, + "<br>Lat: " + response.latitude + "<br>Long: " + response.longitude + "<br>ETA: " + response.eta + "min</p>");
@@ -22,7 +21,6 @@
 					console.log(response);
 				});
 			});
-			// setInterval(function(){ repeat() }, 5000);
 		});
 	
 	</script>

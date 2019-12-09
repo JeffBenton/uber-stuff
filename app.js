@@ -14,7 +14,6 @@ var ejs = require('ejs');
 var request = require('request');
 var cheerio = require('cheerio');
 var fs = require('fs');
-var socket = require
 //Geocoder stuff
 var geocodeProvider = 'google';
 var httpAdapter = 'https';
@@ -101,71 +100,13 @@ var client = require('twilio')(accountSid, authToken);
 
 client.messages.create({
     body: "Send me a response, prease",
-    to: "+19142635538",
+    to: "+19142835331",
     from: "+16505420611"
 }, function(err, message) {
     process.stdout.write(message.sid);
 });
 
-// function getCar(){
-//     if(hasData){
-//         hasData = false;
-//         console.log(address_data);
-//         var splitText = address_data.split(":");
-//         var trip = [];
-//         var tripInfo = {};
-//         geocoder.geocode(splitText[0], function(err, res){
-//             trip.push({ lat: res[0].latitude, long: res[0].longitude });
-//             geocoder.geocode(splitText[1], function(err, res){
-//                 trip.push({ lat: res[0].latitude, long: res[0].longitude });
-//                 console.log(trip);
-//                 var params = {
-//                     start_latitude : trip[0].lat,
-//                     start_longitude: trip[0].long,
-//                     end_latitude: trip[1].lat,
-//                     end_longitude: trip[1].long
-//                 };
-//                 uber.estimates.price(params, function(err, res){
-//                     console.log(res.prices[0]);
-//                     tripInfo.priceEstimate = res.prices[0].estimate;
-
-//                     uber.estimates.time(params, function(err, res){
-//                         console.log(res.times[0]);
-//                         tripInfo.timeEstimate = Math.ceil(res.times[0].estimate/60)
-//                         params.product_id = "a1111c8c-c720-46c3-8534-2fcdd730040d"
-
-//                         postAuthorizedRequest('/v1/requests', globalAccessToken, params, function (error, res) {
-//                             if (error) { console.log(error); }
-//                             console.log(tripInfo); 
-//                             // response.redirect('triptracker');
-//                             client.messages.create({
-//                                 body: "Your car has been dispatched!  Your price estimate is: " + tripInfo.priceEstimate + " and your car will arrive in " + tripInfo.timeEstimate + " minutes. Thank you for choosing Uber.",
-//                                 to: "+19142635538",
-//                                 from: "+16505420611"
-//                             }, function(err, message) {
-//                                     process.stdout.write(message.sid);
-//                                     response.redirect('/triptracker');
-//                                 });
-//                          },  request);
-//                     });
-//                 });
-//             });
-//         })
-//     // }
-// }
 setInterval(function() {scrape()}, 1000);
-
-// io.sockets.on('connection',function(socket){
-//     console.log("connected");
-    // socket.on("count_change", function(count_req){
-    //     io.emit("has_changed",count_req);
-    //     console.log("Has changed");
-    //     console.log(count_req);
-    // });
-// });
-
-
-// setInterval(function(){ getCar() }, 1000);
 
 app.post('/processtext', ensureAuthenticated, function(request,response) {
         var inputText = address_data;
@@ -228,9 +169,7 @@ passport.use(new uberStrategy({
         return done(null, user);
     }
 ));
-// ------------------------------------
-// MAKE THIS WORK PLEASE
-// ------------------------------------
+
 
 app.get('/triptracker', function (request, response) {
   response.render('triptracker');
@@ -267,9 +206,7 @@ app.get('/', ensureAuthenticated, function (request, response) {
     response.render('index');
 });
 
-// ------------------------------------
-// MAKE THIS WORK PLEASE
-// ------------------------------------
+
 // ride request API endpoint
 app.post('/request', ensureAuthenticated, function (request, response) {
     var parameters = {
